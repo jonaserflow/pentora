@@ -6,17 +6,13 @@ on:
       - 'pkg/fingerprint/**'
       - 'pkg/fingerprint/data/**'
       - 'pkg/fingerprint/testdata/**'
-  pull_request_target:
-    paths:
-      - 'pkg/fingerprint/**'
-      - 'pkg/fingerprint/data/**'
-      - 'pkg/fingerprint/testdata/**'
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      issues: write
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -44,31 +40,11 @@ jobs:
       - name: Compare metrics
         run: |
           bash scripts/compare-validation-metrics.sh baseline.log validation.log > metrics_diff.md
-      - name: Upload metrics artifact (for PR comment job)
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: fingerprint-metrics
-          path: metrics_diff.md
-
-  post-comment:
-    if: ${{ github.event_name == 'pull_request_target' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
-    steps:
-      - name: Download metrics artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: fingerprint-metrics
-          path: .
       - name: Post metrics diff comment (pentorabot, issues-only token)
         uses: actions/github-script@v7
-        env:
-          PENTORABOT_ISSUE_TOKEN: ${{ secrets.PENTORABOT_ISSUE_TOKEN }}
         with:
-          github-token: ${{ env.PENTORABOT_ISSUE_TOKEN }}
+          github-token: ${{ secrets.PENTORABOT_ISSUE_TOKEN }}
+          debug: true
           script: |
             const fs = require('fs');
             const body = fs.readFileSync('metrics_diff.md', 'utf8');
