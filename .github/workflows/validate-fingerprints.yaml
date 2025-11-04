@@ -10,9 +10,6 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -40,11 +37,9 @@ jobs:
       - name: Compare metrics
         run: |
           bash scripts/compare-validation-metrics.sh baseline.log validation.log > metrics_diff.md
-      - name: Post metrics diff comment (pentorabot, issues-only token)
+      - name: Post metrics diff comment
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.PENTORABOT_ISSUE_TOKEN }}
-          debug: true
           script: |
             const fs = require('fs');
             const body = fs.readFileSync('metrics_diff.md', 'utf8');
