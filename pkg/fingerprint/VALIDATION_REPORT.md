@@ -52,6 +52,32 @@ go test -bench=. -benchmem ./pkg/fingerprint -benchtime=5s
 go test -bench=. -race ./pkg/fingerprint -benchtime=1s
 ```
 
+### Baselines and Regression Detection
+
+```bash
+# Save baseline (5s for stability)
+go test -bench=. -benchmem ./pkg/fingerprint -run=^$ -benchtime=5s > pkg/fingerprint/testdata/baseline.txt
+
+# Compare current to baseline using benchstat
+go test -bench=. -benchmem ./pkg/fingerprint -run=^$ -benchtime=5s | \
+  benchstat pkg/fingerprint/testdata/baseline.txt -
+```
+
+### Performance Benchmarks
+
+| Benchmark | Time/op | Alloc/op | Allocs/op | Notes |
+|-----------|---------|----------|-----------|-------|
+| ValidationRunner (current dataset) | 135.5 µs | 423.2 KB | 516 | testdata/validation_dataset.yaml |
+| ValidationRunner (1000 cases) | 1.2507 ms | 3.536 MB | 4,032 | synthetic dataset |
+| ResolverSingleMatch | 466.0 ns | 2.797 KB | 3 | baseline |
+| ResolverMultipleRules | 1.001 µs | 2.796 KB | 4 | loaded from data/fingerprint_db.yaml |
+| ResolverNoMatch | 522.2 ns | 2.754 KB | 4 | negative path |
+
+Analysis:
+- Linear scaling expected with dataset size.
+- Allocation footprint per case should remain stable.
+- Optimization opportunity: reduce allocations in resolver loop.
+
 ### Running Full Validation Suite
 
 ```bash
